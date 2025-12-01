@@ -1,0 +1,10 @@
+# Ignorar base de datos (por seguridad)
+db.sqlite3
+
+# Ignorar carpeta de librerías (pesa mucho y se reinstala sola)
+venv/
+__pycache__/
+
+# Ignorar archivos de sistema
+*.log
+.DS_Store
