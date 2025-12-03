@@ -1,0 +1,22 @@
+import { useEffect, useState } from 'react';
+
+function App() {
+  return (
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
+        <h1 className="text-3xl font-bold text-blue-600 mb-4 text-center">
+          🦷 Consultorio Digital
+        </h1>
+        <p className="text-gray-600 text-center mb-6">
+          Sistema de gestión odontológica
+        </p>
+        
+        <button className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition duration-300">
+          Iniciar Sesión
+        </button>
+      </div>
+    </div>
+  )
+}
+
+export default App
