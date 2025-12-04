@@ -30,7 +30,7 @@ function Dashboard() {
     <div className="min-h-screen bg-gray-50 p-10">
       <div className="max-w-4xl mx-auto">
         
-        {/* AQUÍ ESTÁ EL BOTÓN QUE TE FALTA 👇 */}
+        {/* Encabezado con el botón de Nuevo Paciente */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-blue-800">
             🦷 Lista de Pacientes
@@ -39,7 +39,6 @@ function Dashboard() {
             + Nuevo Paciente
           </Link>
         </div>
-        {/* ---------------------------------- */}
 
         {cargando ? (
           <p className="text-center text-gray-500">Cargando datos...</p>
@@ -61,9 +60,13 @@ function Dashboard() {
                     <td className="py-3 px-4">{paciente.cedula}</td>
                     <td className="py-3 px-4">{paciente.telefono}</td>
                     <td className="py-3 px-4 text-center">
-                      <button className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm mr-2">
+                      {/* AQUÍ ESTÁ EL ARREGLO DEL BOTÓN VER FICHA */}
+                      <Link 
+                        to={`/pacientes/${paciente.id}`} 
+                        className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-sm mr-2 inline-block"
+                      >
                         Ver Ficha
-                      </button>
+                      </Link>
                     </td>
                   </tr>
                 ))}
