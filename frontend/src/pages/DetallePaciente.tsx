@@ -11,44 +11,52 @@ interface Paciente {
   fecha_nacimiento: string;
 }
 
-// Estado base de un diente limpio
+interface Tratamiento {
+  id: number;
+  fecha: string;
+  descripcion: string;
+  odontograma: any;
+}
+
+// Estados iniciales
 const dienteVacio = { superior: 'white', inferior: 'white', izquierda: 'white', derecha: 'white', centro: 'white' };
 
 function DetallePaciente() {
   const { id } = useParams();
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   
-  // ESTADOS DEL ODONTOGRAMA
+  // ESTADOS ODONTOGRAMA & HISTORIAL
   const [herramienta, setHerramienta] = useState<string>('red'); 
   const [estadoDientes, setEstadoDientes] = useState<any>({});
   const [nota, setNota] = useState(""); 
+  const [historial, setHistorial] = useState<Tratamiento[]>([]);
 
-  // --- 1. CARGAR DATOS AL INICIO ---
-  useEffect(() => {
-    // A. Cargar datos del paciente
+  // ESTADOS PARA NUEVA CITA
+  const [fechaCita, setFechaCita] = useState("");
+  const [horaCita, setHoraCita] = useState("");
+  const [motivoCita, setMotivoCita] = useState("");
+
+  // CARGAR DATOS
+  const cargarDatos = () => {
     fetch(`http://127.0.0.1:8000/api/pacientes/${id}/`)
       .then((res) => res.json())
       .then((data) => setPaciente(data));
 
-    // B. Cargar el último odontograma guardado
     fetch(`http://127.0.0.1:8000/api/tratamientos/?paciente=${id}`)
       .then((res) => res.json())
       .then((data) => {
-        if (Array.isArray(data) && data.length > 0) {
-          const ultimoTratamiento = data[0];
-          console.log("Cargando historial:", ultimoTratamiento);
-          if (ultimoTratamiento.odontograma) {
-            setEstadoDientes(ultimoTratamiento.odontograma);
-          }
-          if (ultimoTratamiento.descripcion) {
-             setNota(ultimoTratamiento.descripcion);
+        if (Array.isArray(data)) {
+          setHistorial(data);
+          if (data.length > 0 && data[0].odontograma) {
+            setEstadoDientes(data[0].odontograma);
           }
         }
-      })
-      .catch(err => console.error("Error cargando historial", err));
-  }, [id]);
+      });
+  };
 
-  // --- 2. FUNCIÓN PARA PINTAR ---
+  useEffect(() => { cargarDatos(); }, [id]);
+
+  // FUNCIONES ODONTOGRAMA
   const pintarDiente = (numero: number, parte: string) => {
     const key = `diente-${numero}`;
     const estadoActual = estadoDientes[key] || { ...dienteVacio };
@@ -56,28 +64,55 @@ function DetallePaciente() {
     setEstadoDientes({ ...estadoDientes, [key]: nuevoEstado });
   };
 
-  // --- 3. FUNCIÓN PARA GUARDAR ---
   const guardarTratamiento = async () => {
-    if (!paciente) return;
-
-    const datosAGuardar = {
-      paciente: paciente.id,
-      descripcion: nota || "Actualización de Odontograma",
-      odontograma: estadoDientes,
-      costo: 0
-    };
-
+    if (!paciente || !nota.trim()) return alert("⚠️ Escribe una nota antes de guardar.");
+    
     try {
-      const respuesta = await fetch('http://127.0.0.1:8000/api/tratamientos/', {
+      const res = await fetch('http://127.0.0.1:8000/api/tratamientos/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(datosAGuardar)
+        body: JSON.stringify({
+          paciente: paciente.id,
+          descripcion: nota,
+          odontograma: estadoDientes,
+          costo: 0
+        })
+      });
+      if (res.ok) {
+        alert("¡Evolución guardada! 💾");
+        setNota("");
+        cargarDatos();
+      }
+    } catch (e) { alert("Error de conexión"); }
+  };
+
+  // --- NUEVA FUNCIÓN: AGENDAR CITA ---
+  const agendarCita = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!fechaCita || !horaCita || !motivoCita) return alert("Llena todos los campos de la cita");
+
+    // Combinamos fecha y hora para Django (Formato ISO: YYYY-MM-DDTHH:MM)
+    const fechaHoraCombinada = `${fechaCita}T${horaCita}:00`;
+
+    try {
+      const res = await fetch('http://127.0.0.1:8000/api/citas/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          paciente: paciente?.id,
+          fecha_hora: fechaHoraCombinada,
+          motivo: motivoCita,
+          estado: 'PENDIENTE'
+        })
       });
 
-      if (respuesta.ok) {
-        alert("¡Guardado correctamente! ✅");
+      if (res.ok) {
+        alert("📅 ¡Cita agendada con éxito!");
+        setFechaCita("");
+        setHoraCita("");
+        setMotivoCita("");
       } else {
-        alert("Error al guardar ❌");
+        alert("Error al agendar cita.");
       }
     } catch (error) {
       console.error(error);
@@ -87,7 +122,6 @@ function DetallePaciente() {
 
   if (!paciente) return <div className="text-center p-10">Cargando...</div>;
 
-  // Listas de dientes
   const cuadrante1 = [18, 17, 16, 15, 14, 13, 12, 11];
   const cuadrante2 = [21, 22, 23, 24, 25, 26, 27, 28];
   const cuadrante4 = [48, 47, 46, 45, 44, 43, 42, 41];
@@ -101,23 +135,59 @@ function DetallePaciente() {
             <Link to="/" className="text-blue-600 hover:underline mr-4">← Volver</Link>
             <h1 className="text-3xl font-bold text-gray-800">Historia: {paciente.nombre}</h1>
           </div>
-          <button 
-            onClick={guardarTratamiento}
-            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded shadow-lg transform hover:scale-105 transition"
-          >
-            💾 Guardar Cambios
+          <button onClick={guardarTratamiento} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded shadow-lg transform hover:scale-105 transition">
+            💾 Guardar Evolución
           </button>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow h-fit">
-            <h2 className="font-bold text-blue-700 mb-4 border-b pb-2">Datos Personales</h2>
-            <p><strong>Cédula:</strong> {paciente.cedula}</p>
-            <p><strong>Teléfono:</strong> {paciente.telefono}</p>
+          
+          {/* COLUMNA IZQUIERDA: DATOS + CITAS */}
+          <div className="space-y-6">
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h2 className="font-bold text-blue-700 mb-4 border-b pb-2">Datos Personales</h2>
+              <p><strong>Cédula:</strong> {paciente.cedula}</p>
+              <p><strong>Teléfono:</strong> {paciente.telefono}</p>
+            </div>
+
+            {/* --- FORMULARIO DE AGENDAR CITA --- */}
+            <div className="bg-blue-50 p-6 rounded-lg shadow border border-blue-100">
+              <h2 className="font-bold text-blue-800 mb-4 flex items-center gap-2">
+                📅 Agendar Próxima Visita
+              </h2>
+              <form onSubmit={agendarCita} className="space-y-3">
+                <div>
+                  <label className="text-xs font-bold text-gray-600">Fecha</label>
+                  <input type="date" value={fechaCita} onChange={e => setFechaCita(e.target.value)} className="w-full p-2 border rounded text-sm" required />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-600">Hora</label>
+                  <input type="time" value={horaCita} onChange={e => setHoraCita(e.target.value)} className="w-full p-2 border rounded text-sm" required />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-600">Motivo</label>
+                  <input type="text" placeholder="Ej: Limpieza, Extracción..." value={motivoCita} onChange={e => setMotivoCita(e.target.value)} className="w-full p-2 border rounded text-sm" required />
+                </div>
+                <button type="submit" className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded text-sm transition">
+                  Confirmar Cita
+                </button>
+              </form>
+            </div>
+            {/* ---------------------------------- */}
+
+            <div className="bg-white p-6 rounded-lg shadow h-64 overflow-y-auto">
+              <h2 className="font-bold text-gray-700 mb-4 border-b pb-2 sticky top-0 bg-white">📜 Historial Clínico</h2>
+              {historial.map((item) => (
+                <div key={item.id} className="border-l-4 border-blue-400 pl-3 py-1 bg-gray-50 rounded text-sm mb-2">
+                  <p className="font-bold text-gray-700">{item.fecha}</p>
+                  <p className="text-gray-600">{item.descripcion}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
+          {/* COLUMNA DERECHA: ODONTOGRAMA */}
           <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow">
-            {/* Barra de Herramientas */}
             <div className="flex gap-4 mb-6 bg-gray-100 p-3 rounded-lg justify-center overflow-x-auto">
               <button onClick={() => setHerramienta('red')} className={`flex items-center gap-2 px-4 py-2 rounded font-bold whitespace-nowrap ${herramienta === 'red' ? 'bg-red-500 text-white ring-2 ring-red-300' : 'bg-white text-gray-700'}`}>🔴 Caries</button>
               <button onClick={() => setHerramienta('blue')} className={`flex items-center gap-2 px-4 py-2 rounded font-bold whitespace-nowrap ${herramienta === 'blue' ? 'bg-blue-500 text-white ring-2 ring-blue-300' : 'bg-white text-gray-700'}`}>🔵 Restaurado</button>
@@ -125,7 +195,6 @@ function DetallePaciente() {
               <button onClick={() => setHerramienta('white')} className={`flex items-center gap-2 px-4 py-2 rounded font-bold whitespace-nowrap border ${herramienta === 'white' ? 'bg-gray-200 ring-2 ring-gray-400' : 'bg-white text-gray-700'}`}>⚪ Borrar</button>
             </div>
 
-            {/* Mapa Dental */}
             <div className="flex flex-col gap-8 items-center overflow-x-auto pb-4 select-none">
               <div className="flex gap-4 sm:gap-8">
                 <div className="flex gap-1 border-r-2 border-gray-300 pr-4">
@@ -147,12 +216,7 @@ function DetallePaciente() {
             
             <div className="mt-6 border-t pt-4">
               <label className="block text-gray-700 font-bold mb-2">Nota de Evolución:</label>
-              <textarea 
-                className="w-full border p-3 rounded h-24 focus:ring-2 focus:ring-blue-500 outline-none"
-                placeholder="Escribe aquí los detalles del tratamiento..."
-                value={nota}
-                onChange={(e) => setNota(e.target.value)}
-              ></textarea>
+              <textarea className="w-full border p-3 rounded h-24 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Escribe aquí los detalles del tratamiento..." value={nota} onChange={(e) => setNota(e.target.value)}></textarea>
             </div>
           </div>
         </div>
