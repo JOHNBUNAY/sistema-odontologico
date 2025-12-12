@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { User, CreditCard, Phone, Mail, Calendar, Save, ArrowLeft } from 'lucide-react';
+import Layout from '../components/Layout';
 
 function NuevoPaciente() {
-  const navigate = useNavigate(); // Para redirigir al usuario después de guardar
+  const navigate = useNavigate();
 
-  // 1. Guardamos los datos del formulario en el estado
   const [formData, setFormData] = useState({
     nombre: '',
     cedula: '',
@@ -13,32 +14,6 @@ function NuevoPaciente() {
     fecha_nacimiento: ''
   });
 
-  // 2. Función que maneja el envío del formulario
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); // Evita que la página se recargue
-
-    try {
-      const response = await fetch('http://127.0.0.1:8000/api/pacientes/', {
-        method: 'POST', // Le decimos a Django que vamos a CREAR algo
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData), // Convertimos los datos a JSON
-      });
-
-      if (response.ok) {
-        alert('¡Paciente registrado con éxito!');
-        navigate('/'); // Volvemos a la lista principal
-      } else {
-        alert('Error al guardar. Revisa que la cédula no esté repetida.');
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Error de conexión con el servidor.');
-    }
-  };
-
-  // 3. Función para actualizar el estado cuando escribes en los inputs
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
@@ -46,79 +21,150 @@ function NuevoPaciente() {
     });
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('http://127.0.0.1:8000/api/pacientes/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+
+      if (response.ok) {
+        alert('¡Paciente registrado con éxito! 🎉');
+        navigate('/');
+      } else {
+        alert('Error: Revisa que la cédula no esté repetida.');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      alert('Error de conexión con el servidor.');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h1 className="text-2xl font-bold text-blue-800 mb-6 text-center">
-          Registrar Nuevo Paciente
-        </h1>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          
-          {/* Nombre */}
+    <Layout>
+      <div className="max-w-4xl mx-auto">
+        
+        {/* ENCABEZADO */}
+        <div className="flex items-center gap-4 mb-8">
+          <Link to="/" className="p-2 rounded-full hover:bg-gray-200 transition text-gray-600">
+            <ArrowLeft size={24} />
+          </Link>
           <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2">Nombre Completo</label>
-            <input 
-              type="text" 
-              name="nombre"
-              required
-              className="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onChange={handleChange}
-            />
+            <h1 className="text-2xl font-bold text-gray-800">Registrar Nuevo Paciente</h1>
+            <p className="text-gray-500">Ingresa los datos personales para crear el expediente.</p>
           </div>
+        </div>
 
-          {/* Cédula */}
-          <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2">Cédula</label>
-            <input 
-              type="text" 
-              name="cedula"
-              required
-              className="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onChange={handleChange}
-            />
+        {/* TARJETA DEL FORMULARIO */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-8">
+            <form onSubmit={handleSubmit}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                
+                {/* Nombre */}
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Nombre Completo</label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <input 
+                      type="text" 
+                      name="nombre"
+                      required
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="Ej: Juan Pérez"
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                {/* Cédula */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Cédula de Identidad</label>
+                  <div className="relative">
+                    <CreditCard className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <input 
+                      type="text" 
+                      name="cedula"
+                      required
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="Ej: 0991234567"
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                {/* Teléfono */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Teléfono / Celular</label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <input 
+                      type="tel" 
+                      name="telefono"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="Ej: 0987654321"
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Correo Electrónico (Opcional)</label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <input 
+                      type="email" 
+                      name="email"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                      placeholder="juan@email.com"
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                {/* Fecha Nacimiento */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Fecha de Nacimiento</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+                    <input 
+                      type="date" 
+                      name="fecha_nacimiento"
+                      required
+                      className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all text-gray-600"
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+              </div>
+
+              {/* BOTONES DE ACCIÓN */}
+              <div className="flex justify-end gap-4 pt-6 border-t border-gray-100">
+                <Link 
+                  to="/" 
+                  className="px-6 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition"
+                >
+                  Cancelar
+                </Link>
+                <button 
+                  type="submit" 
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-2.5 rounded-xl font-medium shadow-lg shadow-blue-200 flex items-center gap-2 transition-transform active:scale-95"
+                >
+                  <Save size={20} />
+                  Guardar Paciente
+                </button>
+              </div>
+
+            </form>
           </div>
-
-          {/* Fecha Nacimiento */}
-          <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2">Fecha de Nacimiento</label>
-            <input 
-              type="date" 
-              name="fecha_nacimiento"
-              required
-              className="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onChange={handleChange}
-            />
-          </div>
-
-           {/* Teléfono */}
-           <div>
-            <label className="block text-gray-700 text-sm font-bold mb-2">Teléfono</label>
-            <input 
-              type="tel" 
-              name="telefono"
-              className="w-full border p-2 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onChange={handleChange}
-            />
-          </div>
-
-          {/* Botones */}
-          <div className="flex justify-between pt-4">
-            <Link to="/" className="text-gray-500 hover:text-gray-700 py-2">
-              Cancelar
-            </Link>
-            <button 
-              type="submit" 
-              className="bg-blue-600 text-white font-bold py-2 px-6 rounded hover:bg-blue-700 transition"
-            >
-              Guardar
-            </button>
-          </div>
-
-        </form>
+        </div>
       </div>
-    </div>
-  )
+    </Layout>
+  );
 }
 
-export default NuevoPaciente
+export default NuevoPaciente;
