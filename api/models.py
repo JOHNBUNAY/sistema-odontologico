@@ -8,6 +8,18 @@ class Paciente(models.Model):
     fecha_nacimiento = models.DateField()
     creado_en = models.DateTimeField(auto_now_add=True)
 
+    #nuevos campo antecedentes del paciente
+    alergia_antibioticos = models.BooleanField(default=False)
+    alergia_anestesia = models.BooleanField(default=False)
+    hemorragias = models.BooleanField(default=False)
+    vih_sida = models.BooleanField(default=False)
+    tuberculosis = models.BooleanField(default=False)
+    asma = models.BooleanField(default=False)
+    diabetes = models.BooleanField(default=False)
+    hipertension = models.BooleanField(default=False)
+    enfermedad_cardiaca = models.BooleanField(default=False)
+    otros_antecedentes = models.TextField(blank=True, null=True)
+    
     def __str__(self):
         return self.nombre
 
