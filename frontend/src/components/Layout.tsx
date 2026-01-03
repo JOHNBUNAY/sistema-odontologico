@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom'; // <--- Agregamos useNavigate
 import { LayoutDashboard, Users, Calendar, LogOut } from 'lucide-react';
 
 interface LayoutProps {
@@ -8,12 +8,23 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   const location = useLocation();
+  const navigate = useNavigate(); // <--- Hook para navegar
 
   const menuItems = [
     { path: '/', label: 'Inicio', icon: <LayoutDashboard size={20} /> },
     { path: '/pacientes', label: 'Pacientes', icon: <Users size={20} /> },
     { path: '/agenda', label: 'Agenda', icon: <Calendar size={20} /> },
   ];
+
+  // --- FUNCIÓN PARA CERRAR SESIÓN ---
+  const handleLogout = () => {
+    // 1. Borramos la "pulsera" del navegador
+    localStorage.removeItem('token');
+    localStorage.removeItem('refresh');
+    
+    // 2. Redirigimos al Login
+    navigate('/login');
+  };
 
   return (
     <div className="flex min-h-screen bg-gray-100 font-sans">
@@ -49,7 +60,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         </nav>
 
         <div className="p-4 border-t border-gray-100">
-          <button className="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 w-full rounded-xl transition">
+          {/* BOTÓN CON LÓGICA DE SALIDA */}
+          <button 
+            onClick={handleLogout} // <--- ¡AQUÍ ESTÁ LA MAGIA!
+            className="flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-50 w-full rounded-xl transition cursor-pointer"
+          >
             <LogOut size={20} />
             <span>Cerrar Sesión</span>
           </button>
