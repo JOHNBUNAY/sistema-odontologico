@@ -1,12 +1,23 @@
 import { useEffect, useState } from 'react';
-import { Calendar as CalendarIcon, Clock, User, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { 
+  Calendar as CalendarIcon, 
+  Clock, 
+  User, 
+  CheckCircle, 
+  XCircle, 
+  AlertCircle, 
+  ChevronLeft, 
+  ChevronRight,
+  PlusCircle
+} from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Layout from '../components/Layout';
 
 interface Cita {
   id: number;
   fecha_hora: string;
   motivo: string;
-  estado: string; // 'PENDIENTE', 'COMPLETADA', 'CANCELADA'
+  estado: string; 
   paciente: number; 
 }
 
@@ -19,9 +30,10 @@ interface Paciente {
 function Agenda() {
   const [citas, setCitas] = useState<Cita[]>([]);
   const [pacientes, setPacientes] = useState<Record<number, Paciente>>({});
-  const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date().toISOString().split('T')[0]);
+  
+  // Usamos un objeto Date real para manejar mejor la navegación
+  const [fechaSeleccionada, setFechaSeleccionada] = useState(new Date());
 
-  // Cargar datos iniciales
   useEffect(() => {
     fetch('http://127.0.0.1:8000/api/citas/')
       .then(res => res.json())
@@ -36,117 +48,158 @@ function Agenda() {
       });
   }, []);
 
-  // --- FUNCIÓN NUEVA: CAMBIAR ESTADO ---
   const cambiarEstado = async (id: number, nuevoEstado: string) => {
-    // 1. Actualización Optimista (Visualmente inmediato)
     const citasActualizadas = citas.map(c => 
       c.id === id ? { ...c, estado: nuevoEstado } : c
     );
     setCitas(citasActualizadas);
 
-    // 2. Guardar en Backend
     try {
       await fetch(`http://127.0.0.1:8000/api/citas/${id}/`, {
-        method: 'PATCH', // PATCH sirve para editar solo un pedacito del dato
-        headers: { 'Content-Type': 'application/json' },
+        method: 'PATCH',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}` // ¡Importante para seguridad!
+        },
         body: JSON.stringify({ estado: nuevoEstado })
       });
     } catch (error) {
       alert("Error al actualizar la cita");
-      console.error(error);
     }
   };
 
+  // --- NAVEGACIÓN DE FECHAS ---
+  const cambiarDia = (dias: number) => {
+    const nuevaFecha = new Date(fechaSeleccionada);
+    nuevaFecha.setDate(fechaSeleccionada.getDate() + dias);
+    setFechaSeleccionada(nuevaFecha);
+  };
+
+  const fechaString = fechaSeleccionada.toISOString().split('T')[0];
+
   const citasFiltradas = citas.filter(cita => 
-    cita.fecha_hora.startsWith(fechaSeleccionada)
+    cita.fecha_hora.startsWith(fechaString)
   ).sort((a, b) => new Date(a.fecha_hora).getTime() - new Date(b.fecha_hora).getTime());
+
+  // --- ESTADÍSTICAS RÁPIDAS ---
+  const stats = {
+    total: citasFiltradas.length,
+    pendientes: citasFiltradas.filter(c => c.estado === 'PENDIENTE').length,
+    completadas: citasFiltradas.filter(c => c.estado === 'COMPLETADA').length
+  };
 
   const formatHora = (fechaISO: string) => {
     const fecha = new Date(fechaISO);
     return fecha.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  // Ayuda visual para los colores
-  const getEstadoColor = (estado: string) => {
-    switch (estado) {
-      case 'COMPLETADA': return 'bg-green-50 border-green-200';
-      case 'CANCELADA': return 'bg-red-50 border-red-200 opacity-60';
-      default: return 'bg-white border-gray-100';
-    }
+  const formatFechaBonita = (date: Date) => {
+    return date.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
   };
 
   return (
     <Layout>
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-end mb-8">
+      <div className="max-w-5xl mx-auto">
+        
+        {/* ENCABEZADO Y CONTROLES */}
+        <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
               <CalendarIcon className="text-blue-600" size={28}/> Agenda Diaria
             </h1>
-            <p className="text-gray-500">Gestiona el flujo de pacientes.</p>
+            <p className="text-gray-500 capitalize">{formatFechaBonita(fechaSeleccionada)}</p>
           </div>
-          <div className="bg-white p-2 rounded-xl shadow-sm border border-gray-200 flex items-center gap-2">
-            <span className="text-sm font-bold text-gray-600 pl-2">Ver día:</span>
-            <input type="date" value={fechaSeleccionada} onChange={(e) => setFechaSeleccionada(e.target.value)} className="border-none outline-none text-gray-700 font-medium bg-transparent cursor-pointer"/>
+
+          <div className="flex items-center bg-white p-1.5 rounded-xl shadow-sm border border-gray-200">
+            <button onClick={() => cambiarDia(-1)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition">
+              <ChevronLeft size={20}/>
+            </button>
+            <div className="px-4 font-bold text-gray-700 min-w-[140px] text-center">
+              {fechaString}
+            </div>
+            <button onClick={() => cambiarDia(1)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition">
+              <ChevronRight size={20}/>
+            </button>
           </div>
         </div>
 
+        {/* BARRA DE ESTADÍSTICAS (Solo se muestra si hay citas) */}
+        {stats.total > 0 && (
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div className="bg-blue-50 text-blue-700 p-3 rounded-xl flex items-center justify-center gap-2 border border-blue-100 font-medium">
+              <CalendarIcon size={18}/> {stats.total} Citas Totales
+            </div>
+            <div className="bg-orange-50 text-orange-700 p-3 rounded-xl flex items-center justify-center gap-2 border border-orange-100 font-medium">
+              <Clock size={18}/> {stats.pendientes} Pendientes
+            </div>
+            <div className="bg-green-50 text-green-700 p-3 rounded-xl flex items-center justify-center gap-2 border border-green-100 font-medium">
+              <CheckCircle size={18}/> {stats.completadas} Atendidas
+            </div>
+          </div>
+        )}
+
+        {/* LISTA DE CITAS */}
         <div className="space-y-4">
           {citasFiltradas.length === 0 ? (
-            <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-gray-300">
-              <CalendarIcon size={48} className="mx-auto text-gray-300 mb-4"/>
-              <p className="text-gray-500 font-medium">Agenda libre</p>
-              <p className="text-sm text-gray-400">No hay pacientes programados para esta fecha.</p>
+            // EMPTY STATE MEJORADO
+            <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-gray-300">
+              <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CalendarIcon size={32} className="text-gray-300"/>
+              </div>
+              <h3 className="text-lg font-bold text-gray-700">Día libre</h3>
+              <p className="text-gray-400 mb-6">No hay pacientes agendados para este día.</p>
+              <Link to="/nuevo" className="inline-flex items-center gap-2 text-blue-600 bg-blue-50 px-4 py-2 rounded-lg font-medium hover:bg-blue-100 transition">
+                <PlusCircle size={18}/> Agendar Paciente
+              </Link>
             </div>
           ) : (
+            // LISTA DE TARJETAS
             citasFiltradas.map((cita) => {
               const paciente = pacientes[cita.paciente];
               const esCompletada = cita.estado === 'COMPLETADA';
               const esCancelada = cita.estado === 'CANCELADA';
 
+              // Bordes de colores según estado
+              const bordeColor = esCompletada ? 'border-l-green-500' : esCancelada ? 'border-l-red-300' : 'border-l-blue-500';
+              const bgOpacity = esCancelada ? 'opacity-60 bg-gray-50' : 'bg-white';
+
               return (
-                <div key={cita.id} className={`p-6 rounded-2xl shadow-sm border transition-all ${getEstadoColor(cita.estado)} flex items-center justify-between`}>
+                <div key={cita.id} className={`group relative p-5 rounded-xl shadow-sm border border-gray-100 ${bordeColor} border-l-[6px] transition-all hover:shadow-md ${bgOpacity}`}>
                   
-                  <div className="flex items-center gap-6">
-                    <div className={`flex flex-col items-center justify-center w-20 h-20 rounded-xl ${esCompletada ? 'bg-green-100 text-green-700' : esCancelada ? 'bg-red-100 text-red-700' : 'bg-blue-50 text-blue-700'}`}>
-                      <Clock size={24} className="mb-1"/>
-                      <span className="text-lg font-bold">{formatHora(cita.fecha_hora)}</span>
-                    </div>
-                    
-                    <div>
-                      <h3 className={`text-xl font-bold ${esCancelada ? 'text-gray-400 line-through' : 'text-gray-800'}`}>
-                        {paciente ? paciente.nombre : 'Cargando...'}
-                      </h3>
-                      <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
-                        <span className="flex items-center gap-1 bg-white px-2 py-1 rounded border border-gray-100 shadow-sm">
-                          <User size={14}/> {cita.motivo}
-                        </span>
-                        {/* Estado Etiqueta */}
-                        {esCompletada && <span className="text-green-600 font-bold flex items-center gap-1"><CheckCircle size={14}/> Atendido</span>}
-                        {esCancelada && <span className="text-red-500 font-bold flex items-center gap-1"><AlertCircle size={14}/> Cancelado</span>}
+                  <div className="flex justify-between items-start">
+                    <div className="flex gap-4">
+                      {/* Hora */}
+                      <div className="flex flex-col items-center justify-center px-4 py-2 bg-gray-50 rounded-lg border border-gray-200">
+                        <span className="text-lg font-bold text-gray-800">{formatHora(cita.fecha_hora)}</span>
+                        <span className="text-xs text-gray-500 uppercase">Hora</span>
+                      </div>
+
+                      {/* Datos */}
+                      <div>
+                        <h3 className={`text-lg font-bold ${esCancelada ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+                          {paciente ? paciente.nombre : 'Cargando...'}
+                        </h3>
+                        <div className="flex items-center gap-2 text-sm text-gray-500 mt-1">
+                          <span className="bg-gray-100 px-2 py-0.5 rounded text-xs font-medium text-gray-600">{cita.motivo}</span>
+                          {paciente && <span className="flex items-center gap-1"><User size={12}/> {paciente.telefono}</span>}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* BOTONES DE ACCIÓN (Solo se muestran si está PENDIENTE) */}
-                  {!esCompletada && !esCancelada && (
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => cambiarEstado(cita.id, 'COMPLETADA')}
-                        className="p-3 bg-white border border-gray-200 text-green-600 hover:bg-green-50 hover:border-green-300 rounded-xl transition shadow-sm" 
-                        title="Marcar como Atendido"
-                      >
-                        <CheckCircle size={24}/>
-                      </button>
-                      <button 
-                        onClick={() => cambiarEstado(cita.id, 'CANCELADA')}
-                        className="p-3 bg-white border border-gray-200 text-red-500 hover:bg-red-50 hover:border-red-300 rounded-xl transition shadow-sm" 
-                        title="Cancelar Cita"
-                      >
-                        <XCircle size={24}/>
-                      </button>
+                    {/* Estado / Acciones */}
+                    <div className="flex items-center gap-2">
+                       {esCompletada && <span className="text-green-600 bg-green-50 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"><CheckCircle size={14}/> Finalizado</span>}
+                       {esCancelada && <span className="text-red-500 bg-red-50 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"><XCircle size={14}/> Cancelado</span>}
+                       
+                       {/* Botones de acción (solo si está pendiente) */}
+                       {!esCompletada && !esCancelada && (
+                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button onClick={() => cambiarEstado(cita.id, 'COMPLETADA')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Completar"><CheckCircle size={20}/></button>
+                          <button onClick={() => cambiarEstado(cita.id, 'CANCELADA')} className="p-2 text-red-400 hover:bg-red-50 rounded-lg" title="Cancelar"><XCircle size={20}/></button>
+                        </div>
+                       )}
                     </div>
-                  )}
+                  </div>
                 </div>
               );
             })
