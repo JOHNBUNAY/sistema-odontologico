@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Save, Calendar, Activity, Phone, CreditCard, User, AlertTriangle, CheckSquare, Square, Thermometer, Heart, Wind } from 'lucide-react';
+import { ArrowLeft, Save, Calendar, Activity, Phone, CreditCard, User, AlertTriangle, CheckSquare, Square, Thermometer, Heart, Wind, Stethoscope, MessageSquare } from 'lucide-react';
 import Layout from '../components/Layout';
 import Diente from '../components/Diente';
 
@@ -9,6 +9,9 @@ interface Paciente {
   nombre: string;
   cedula: string;
   telefono: string;
+  // Sección 1: Motivo
+  motivo_consulta: string;
+  // Antecedentes
   alergia_antibioticos: boolean;
   alergia_anestesia: boolean;
   hemorragias: boolean;
@@ -19,6 +22,20 @@ interface Paciente {
   hipertension: boolean;
   enfermedad_cardiaca: boolean;
   otros_antecedentes: string;
+  // Sección 5: Estomatognático
+  labios: boolean;
+  mejillas: boolean;
+  maxilar_superior: boolean;
+  maxilar_inferior: boolean;
+  lengua: boolean;
+  paladar: boolean;
+  piso_boca: boolean;
+  carrillos: boolean;
+  glandulas_salivales: boolean;
+  orofaringe: boolean;
+  atm: boolean;
+  ganglios: boolean;
+  descripcion_estomatognatico: string;
 }
 
 interface Tratamiento {
@@ -33,30 +50,40 @@ const dienteVacio = { superior: 'white', inferior: 'white', izquierda: 'white', 
 function DetallePaciente() {
   const { id } = useParams();
   const [paciente, setPaciente] = useState<Paciente | null>(null);
+  const [token] = useState(localStorage.getItem('token'));
   
-  // ESTADOS ODONTOGRAMA
   const [herramienta, setHerramienta] = useState<string>('red'); 
   const [estadoDientes, setEstadoDientes] = useState<any>({});
   const [nota, setNota] = useState(""); 
   const [historial, setHistorial] = useState<Tratamiento[]>([]);
-
-  // ESTADOS SIGNOS VITALES (Formulario 033 - Sección 4)
+  
   const [presion, setPresion] = useState("");
   const [temperatura, setTemperatura] = useState("");
   const [pulso, setPulso] = useState("");
   const [respiracion, setRespiracion] = useState("");
 
-  // ESTADOS CITA
+  // ESTADOS TEXTOS LARGOS
+  const [descEstoma, setDescEstoma] = useState("");
+  const [motivoTexto, setMotivoTexto] = useState(""); // <--- NUEVO
+
   const [fechaCita, setFechaCita] = useState("");
   const [horaCita, setHoraCita] = useState("");
   const [motivoCita, setMotivoCita] = useState("");
 
   const cargarDatos = () => {
-    fetch(`http://127.0.0.1:8000/api/pacientes/${id}/`)
+    fetch(`http://127.0.0.1:8000/api/pacientes/${id}/`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then((res) => res.json())
-      .then((data) => setPaciente(data));
+      .then((data) => {
+        setPaciente(data);
+        setDescEstoma(data.descripcion_estomatognatico || "");
+        setMotivoTexto(data.motivo_consulta || ""); // <--- CARGAMOS EL MOTIVO
+      });
 
-    fetch(`http://127.0.0.1:8000/api/tratamientos/?paciente=${id}`)
+    fetch(`http://127.0.0.1:8000/api/tratamientos/?paciente=${id}`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -70,20 +97,6 @@ function DetallePaciente() {
 
   useEffect(() => { cargarDatos(); }, [id]);
 
-  const toggleAntecedente = async (campo: keyof Paciente) => {
-    if (!paciente) return;
-    const nuevoValor = !paciente[campo];
-    const pacienteActualizado = { ...paciente, [campo]: nuevoValor };
-    setPaciente(pacienteActualizado);
-    try {
-      await fetch(`http://127.0.0.1:8000/api/pacientes/${paciente.id}/`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [campo]: nuevoValor })
-      });
-    } catch (error) { alert("Error al guardar antecedente"); }
-  };
-
   const pintarDiente = (numero: number, parte: string) => {
     const key = `diente-${numero}`;
     const estadoActual = estadoDientes[key] || { ...dienteVacio };
@@ -91,21 +104,44 @@ function DetallePaciente() {
     setEstadoDientes({ ...estadoDientes, [key]: nuevoEstado });
   };
 
+  const toggleCampo = async (campo: keyof Paciente) => {
+    if (!paciente) return;
+    const nuevoValor = !paciente[campo];
+    const pacienteActualizado = { ...paciente, [campo]: nuevoValor };
+    setPaciente(pacienteActualizado);
+    try {
+      await fetch(`http://127.0.0.1:8000/api/pacientes/${paciente.id}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ [campo]: nuevoValor })
+      });
+    } catch (error) { alert("Error al guardar cambio"); }
+  };
+
+  // Guardar textos (Motivo o Sección 5)
+  const guardarTexto = async (campo: string, valor: string) => {
+    if (!paciente) return;
+    try {
+      await fetch(`http://127.0.0.1:8000/api/pacientes/${paciente.id}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ [campo]: valor })
+      });
+    } catch (e) { console.error(e); }
+  };
+
   const guardarTratamiento = async () => {
     if (!paciente || !nota.trim()) return alert("⚠️ Escribe una nota antes de guardar.");
-    
-    // --- MAGIA: Unimos los Signos Vitales a la nota automáticamente ---
     let textoSignos = "";
     if (presion || temperatura || pulso || respiracion) {
       textoSignos = `[Signos: PA:${presion || '--'} | T:${temperatura || '--'}°C | FC:${pulso || '--'} | FR:${respiracion || '--'}] \n`;
     }
     const notaFinal = textoSignos + nota;
-    // ------------------------------------------------------------------
 
     try {
       const res = await fetch('http://127.0.0.1:8000/api/tratamientos/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           paciente: paciente.id,
           descripcion: notaFinal,
@@ -114,9 +150,8 @@ function DetallePaciente() {
         })
       });
       if (res.ok) {
-        alert("¡Evolución guardada con Signos Vitales! 🩺");
-        setNota("");
-        setPresion(""); setTemperatura(""); setPulso(""); setRespiracion(""); // Limpiar campos
+        alert("¡Evolución guardada! 💾");
+        setNota(""); setPresion(""); setTemperatura(""); setPulso(""); setRespiracion("");
         cargarDatos();
       }
     } catch (e) { alert("Error de conexión"); }
@@ -124,11 +159,10 @@ function DetallePaciente() {
 
   const agendarCita = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fechaCita || !horaCita || !motivoCita) return alert("Llena todos los campos");
     try {
       const res = await fetch('http://127.0.0.1:8000/api/citas/', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           paciente: paciente?.id,
           fecha_hora: `${fechaCita}T${horaCita}:00`,
@@ -145,6 +179,21 @@ function DetallePaciente() {
 
   if (!paciente) return <Layout><div className="p-10 text-center">Cargando...</div></Layout>;
 
+  const listaAntecedentes = [
+    { key: 'alergia_antibioticos', label: 'Alergia Antibióticos' }, { key: 'alergia_anestesia', label: 'Alergia Anestesia' },
+    { key: 'hipertension', label: 'Hipertensión' }, { key: 'diabetes', label: 'Diabetes' },
+    { key: 'hemorragias', label: 'Hemorragias' }, { key: 'asma', label: 'Asma' }
+  ];
+
+  const listaEstomatognatico = [
+    { key: 'labios', label: '1. Labios' }, { key: 'mejillas', label: '2. Mejillas' },
+    { key: 'maxilar_superior', label: '3. Maxilar Sup.' }, { key: 'maxilar_inferior', label: '4. Maxilar Inf.' },
+    { key: 'lengua', label: '5. Lengua' }, { key: 'paladar', label: '6. Paladar' },
+    { key: 'piso_boca', label: '7. Piso Boca' }, { key: 'carrillos', label: '8. Carrillos' },
+    { key: 'glandulas_salivales', label: '9. Gland. Salivales' }, { key: 'orofaringe', label: '10. Oro Faringe' },
+    { key: 'atm', label: '11. A.T.M' }, { key: 'ganglios', label: '12. Ganglios' },
+  ];
+
   const cuadrante1 = [18, 17, 16, 15, 14, 13, 12, 11];
   const cuadrante2 = [21, 22, 23, 24, 25, 26, 27, 28];
   const cuadrante4 = [48, 47, 46, 45, 44, 43, 42, 41];
@@ -153,13 +202,10 @@ function DetallePaciente() {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto">
-        
         {/* ENCABEZADO */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4">
-            <Link to="/" className="p-2 rounded-full hover:bg-gray-200 transition text-gray-600">
-              <ArrowLeft size={24} />
-            </Link>
+            <Link to="/pacientes" className="p-2 rounded-full hover:bg-gray-200 transition text-gray-600"><ArrowLeft size={24} /></Link>
             <div>
               <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
                 <User size={24} className="text-blue-600"/> {paciente.nombre}
@@ -170,36 +216,80 @@ function DetallePaciente() {
               </div>
             </div>
           </div>
-          <button onClick={guardarTratamiento} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-xl font-medium shadow-lg shadow-green-200 flex items-center gap-2 transition-transform active:scale-95">
+          <button onClick={guardarTratamiento} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-xl font-medium shadow-lg shadow-green-200 flex items-center gap-2 hover:scale-105 transition-transform">
             <Save size={20} /> Guardar Evolución
           </button>
         </div>
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           
-          {/* COLUMNA IZQUIERDA (Datos + Antecedentes) */}
+          {/* COLUMNA IZQUIERDA */}
           <div className="xl:col-span-3 space-y-6">
+            
+            {/* --- SECCIÓN 1: MOTIVO DE CONSULTA (NUEVO) --- */}
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+              <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2 border-b pb-2">
+                <MessageSquare className="text-blue-500" size={20}/> 1. Motivo Consulta
+              </h2>
+              <textarea 
+                placeholder="Anexar la queja del problema (Versión del informante)..." 
+                className="w-full text-sm p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                rows={3}
+                value={motivoTexto}
+                onChange={(e) => setMotivoTexto(e.target.value)}
+                onBlur={() => guardarTexto('motivo_consulta', motivoTexto)}
+              ></textarea>
+            </div>
+
+            {/* SECCIÓN 3: ANTECEDENTES */}
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
-                <AlertTriangle className="text-orange-500" size={20}/> Alerta Médica
+                <AlertTriangle className="text-orange-500" size={20}/> 3. Alerta Médica
               </h2>
-              <div className="space-y-3">
-                {[{ key: 'alergia_antibioticos', label: 'Alergia Antibióticos' }, { key: 'alergia_anestesia', label: 'Alergia Anestesia' }, { key: 'hipertension', label: 'Hipertensión' }, { key: 'diabetes', label: 'Diabetes' }, { key: 'hemorragias', label: 'Hemorragias' }].map((item) => (
-                  <div key={item.key} className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
-                      // @ts-ignore 
-                      paciente[item.key] ? 'bg-red-50 border border-red-200' : 'hover:bg-gray-50'}`} 
+              <div className="space-y-2">
+                {listaAntecedentes.map((item) => (
+                  <div key={item.key} onClick={() => toggleCampo(item.key as keyof Paciente)} className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
                       // @ts-ignore
-                      onClick={() => toggleAntecedente(item.key)}>
+                      paciente[item.key] ? 'bg-red-50 border border-red-200' : 'hover:bg-gray-50'
+                    }`}>
                     <span className={`text-sm font-medium ${
                       // @ts-ignore
                       paciente[item.key] ? 'text-red-700' : 'text-gray-600'}`}>{item.label}</span>
                     {/* @ts-ignore */}
-                    {paciente[item.key] ? <CheckSquare className="text-red-600" size={20} /> : <Square className="text-gray-300" size={20} />}
+                    {paciente[item.key] ? <CheckSquare className="text-red-600" size={18} /> : <Square className="text-gray-300" size={18} />}
                   </div>
                 ))}
               </div>
             </div>
-            {/* Cita */}
+
+            {/* SECCIÓN 5: ESTOMATOGNÁTICO */}
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+              <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
+                <Stethoscope className="text-purple-500" size={20}/> 5. Estomatognático
+              </h2>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                {listaEstomatognatico.map((item) => (
+                  <div key={item.key} onClick={() => toggleCampo(item.key as keyof Paciente)} className={`flex flex-col items-center justify-center p-2 rounded-lg cursor-pointer border transition-all ${
+                      // @ts-ignore
+                      paciente[item.key] ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-transparent hover:border-gray-200'
+                    }`}>
+                    <span className={`text-xs font-bold text-center ${
+                      // @ts-ignore
+                      paciente[item.key] ? 'text-red-600' : 'text-gray-500'}`}>{item.label}</span>
+                  </div>
+                ))}
+              </div>
+              <textarea 
+                placeholder="Describir patología encontrada..." 
+                className="w-full text-xs p-2 border rounded-lg bg-gray-50 focus:ring-1 focus:ring-purple-500 outline-none"
+                rows={3}
+                value={descEstoma}
+                onChange={(e) => setDescEstoma(e.target.value)}
+                onBlur={() => guardarTexto('descripcion_estomatognatico', descEstoma)}
+              ></textarea>
+            </div>
+
+            {/* CITA */}
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
                 <Calendar className="text-blue-500" size={20}/> Nueva Cita
@@ -215,9 +305,8 @@ function DetallePaciente() {
             </div>
           </div>
 
-          {/* COLUMNA CENTRAL (Odontograma + Signos Vitales) */}
+          {/* COLUMNA CENTRAL + DERECHA (Igual que antes) */}
           <div className="xl:col-span-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-             {/* Herramientas */}
              <div className="flex flex-wrap gap-2 mb-6 justify-center bg-gray-50 p-3 rounded-xl">
               {[{ id: 'red', label: 'Caries', color: 'bg-red-500' }, { id: 'blue', label: 'Restaurado', color: 'bg-blue-500' }, { id: 'yellow', label: 'Corona', color: 'bg-yellow-400' }, { id: 'green', label: 'Extracción', color: 'bg-green-500' }].map((tool) => (
                 <button key={tool.id} onClick={() => setHerramienta(tool.id)} className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${herramienta === tool.id ? `${tool.color} text-white shadow-md` : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-100'}`}>
@@ -225,8 +314,7 @@ function DetallePaciente() {
                 </button>
               ))}
             </div>
-
-            {/* Odontograma */}
+            {/* ODONTOGRAMA */}
             <div className="flex flex-col gap-6 items-center overflow-x-auto pb-4 select-none border-b border-gray-100 mb-6">
               <div className="flex gap-4 pb-4 border-b border-dashed border-gray-200">
                 <div className="flex gap-1 border-r border-gray-300 pr-4">{cuadrante1.map(num => <Diente key={num} numero={num} colores={estadoDientes[`diente-${num}`] || dienteVacio} onClick={(parte) => pintarDiente(num, parte)} />)}</div>
@@ -237,55 +325,23 @@ function DetallePaciente() {
                 <div className="flex gap-1">{cuadrante3.map(num => <Diente key={num} numero={num} colores={estadoDientes[`diente-${num}`] || dienteVacio} onClick={(parte) => pintarDiente(num, parte)} />)}</div>
               </div>
             </div>
-
-            {/* --- SIGNOS VITALES (Form. 033 Sección 4) --- */}
+            {/* SIGNOS VITALES */}
             <div className="mb-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
               <h3 className="text-xs font-bold text-blue-800 uppercase mb-3 flex items-center gap-2">
-                <Activity size={16}/> Signos Vitales (Visita Actual)
+                <Activity size={16}/> 4. Signos Vitales
               </h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Presión (PA)</label>
-                  <div className="relative">
-                    <input type="text" placeholder="120/80" className="w-full p-2 pl-7 border rounded text-sm" value={presion} onChange={e => setPresion(e.target.value)} />
-                    <Activity className="absolute left-2 top-2.5 text-gray-400" size={14} />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Temp (°C)</label>
-                  <div className="relative">
-                    <input type="number" placeholder="36.5" className="w-full p-2 pl-7 border rounded text-sm" value={temperatura} onChange={e => setTemperatura(e.target.value)} />
-                    <Thermometer className="absolute left-2 top-2.5 text-gray-400" size={14} />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Pulso (FC)</label>
-                  <div className="relative">
-                    <input type="number" placeholder="80" className="w-full p-2 pl-7 border rounded text-sm" value={pulso} onChange={e => setPulso(e.target.value)} />
-                    <Heart className="absolute left-2 top-2.5 text-gray-400" size={14} />
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-500 mb-1 block">Resp. (FR)</label>
-                  <div className="relative">
-                    <input type="number" placeholder="20" className="w-full p-2 pl-7 border rounded text-sm" value={respiracion} onChange={e => setRespiracion(e.target.value)} />
-                    <Wind className="absolute left-2 top-2.5 text-gray-400" size={14} />
-                  </div>
-                </div>
+                <div><label className="text-xs text-gray-500 mb-1 block">Presión</label><div className="relative"><input type="text" placeholder="120/80" className="w-full p-2 pl-7 border rounded text-sm" value={presion} onChange={e => setPresion(e.target.value)} /><Activity className="absolute left-2 top-2.5 text-gray-400" size={14} /></div></div>
+                <div><label className="text-xs text-gray-500 mb-1 block">Temp</label><div className="relative"><input type="number" placeholder="36.5" className="w-full p-2 pl-7 border rounded text-sm" value={temperatura} onChange={e => setTemperatura(e.target.value)} /><Thermometer className="absolute left-2 top-2.5 text-gray-400" size={14} /></div></div>
+                <div><label className="text-xs text-gray-500 mb-1 block">Pulso</label><div className="relative"><input type="number" placeholder="80" className="w-full p-2 pl-7 border rounded text-sm" value={pulso} onChange={e => setPulso(e.target.value)} /><Heart className="absolute left-2 top-2.5 text-gray-400" size={14} /></div></div>
+                <div><label className="text-xs text-gray-500 mb-1 block">Resp.</label><div className="relative"><input type="number" placeholder="20" className="w-full p-2 pl-7 border rounded text-sm" value={respiracion} onChange={e => setRespiracion(e.target.value)} /><Wind className="absolute left-2 top-2.5 text-gray-400" size={14} /></div></div>
               </div>
             </div>
-            {/* ------------------------------------------- */}
-            
-            <div className="mt-4">
-              <textarea className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm text-gray-600 bg-gray-50 h-24" placeholder="Nota de evolución..." value={nota} onChange={(e) => setNota(e.target.value)}></textarea>
-            </div>
+            <textarea className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm text-gray-600 bg-gray-50 h-24" placeholder="Nota de evolución..." value={nota} onChange={(e) => setNota(e.target.value)}></textarea>
           </div>
 
-          {/* COLUMNA DERECHA (Historial) */}
           <div className="xl:col-span-3 bg-white p-0 rounded-2xl shadow-sm border border-gray-100 h-[600px] flex flex-col">
-            <div className="p-4 border-b border-gray-100 bg-gray-50 rounded-t-2xl">
-              <h2 className="font-bold text-gray-800 flex items-center gap-2"><Activity className="text-blue-500" size={20}/> Historial</h2>
-            </div>
+            <div className="p-4 border-b border-gray-100 bg-gray-50 rounded-t-2xl"><h2 className="font-bold text-gray-800 flex items-center gap-2"><Activity className="text-blue-500" size={20}/> Historial</h2></div>
             <div className="overflow-y-auto p-4 space-y-4 flex-1">
               {historial.map((item) => (
                 <div key={item.id} className="relative pl-4 border-l-2 border-blue-100 pb-4 last:pb-0">

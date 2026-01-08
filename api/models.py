@@ -5,6 +5,8 @@ class Paciente(models.Model):
     cedula = models.CharField(max_length=20, unique=True)
     telefono = models.CharField(max_length=15, blank=True)
     email = models.EmailField(blank=True)
+    # --- SECCIÓN 1: MOTIVO DE CONSULTA (MSP) ---
+    motivo_consulta = models.TextField(blank=True, null=True)
     fecha_nacimiento = models.DateField()
     creado_en = models.DateTimeField(auto_now_add=True)
 
@@ -19,7 +21,23 @@ class Paciente(models.Model):
     hipertension = models.BooleanField(default=False)
     enfermedad_cardiaca = models.BooleanField(default=False)
     otros_antecedentes = models.TextField(blank=True, null=True)
+    # --- SECCIÓN 5: EXAMEN DEL SISTEMA ESTOMATOGNÁTICO (MSP) ---
+    # True = Con Patología (Rojo), False = Sano
+    labios = models.BooleanField(default=False)
+    mejillas = models.BooleanField(default=False)
+    maxilar_superior = models.BooleanField(default=False)
+    maxilar_inferior = models.BooleanField(default=False)
+    lengua = models.BooleanField(default=False)
+    paladar = models.BooleanField(default=False)
+    piso_boca = models.BooleanField(default=False)
+    carrillos = models.BooleanField(default=False)
+    glandulas_salivales = models.BooleanField(default=False)
+    orofaringe = models.BooleanField(default=False)
+    atm = models.BooleanField(default=False)
+    ganglios = models.BooleanField(default=False)
     
+    # Espacio para describir la patología encontrada (como dice el formulario)
+    descripcion_estomatognatico = models.TextField(blank=True, null=True)
     def __str__(self):
         return self.nombre
 

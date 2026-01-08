@@ -5,7 +5,7 @@ import {
   User, 
   CheckCircle, 
   XCircle, 
-  AlertCircle, 
+   
   ChevronLeft, 
   ChevronRight,
   PlusCircle
