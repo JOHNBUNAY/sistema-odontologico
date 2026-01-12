@@ -148,9 +148,10 @@ function Agenda() {
               </div>
               <h3 className="text-lg font-bold text-gray-700">Día libre</h3>
               <p className="text-gray-400 mb-6">No hay pacientes agendados para este día.</p>
-              <Link to="/nuevo" className="inline-flex items-center gap-2 text-blue-600 bg-blue-50 px-4 py-2 rounded-lg font-medium hover:bg-blue-100 transition">
-                <PlusCircle size={18}/> Agendar Paciente
-              </Link>
+              
+              <Link to="/pacientes" className="inline-flex items-center gap-2 text-blue-600 bg-blue-50 px-4 py-2 rounded-lg font-medium hover:bg-blue-100 transition">
+              <PlusCircle size={18}/> Buscar Paciente para Agendar
+             </Link>
             </div>
           ) : (
             // LISTA DE TARJETAS

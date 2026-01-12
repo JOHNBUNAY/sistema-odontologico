@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Save, Calendar, Activity, Phone, CreditCard, User, AlertTriangle, CheckSquare, Square, Thermometer, Heart, Wind, Stethoscope, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Save, Calendar, Activity, Phone, CreditCard, User, AlertTriangle, CheckSquare, Square, Thermometer, Heart, Wind, Stethoscope, MessageSquare, Info, X, MapPin, Mail, ShieldCheck } from 'lucide-react';
 import Layout from '../components/Layout';
 import Diente from '../components/Diente';
 
@@ -9,6 +9,19 @@ interface Paciente {
   nombre: string;
   cedula: string;
   telefono: string;
+  email: string;
+  fecha_nacimiento: string;
+  sexo: string;
+  direccion: string;
+  ocupacion: string;
+  // Apoderado
+  tiene_representante: boolean;
+  rep_nombres: string;
+  rep_apellidos: string;
+  rep_relacion: string;
+  rep_cedula: string;
+  rep_telefono: string;
+  
   // Sección 1: Motivo
   motivo_consulta: string;
   // Antecedentes
@@ -52,20 +65,24 @@ function DetallePaciente() {
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [token] = useState(localStorage.getItem('token'));
   
+  // ESTADOS INTERFAZ
+  const [mostrarFicha, setMostrarFicha] = useState(false);
   const [herramienta, setHerramienta] = useState<string>('red'); 
   const [estadoDientes, setEstadoDientes] = useState<any>({});
   const [nota, setNota] = useState(""); 
   const [historial, setHistorial] = useState<Tratamiento[]>([]);
   
+  // SIGNOS VITALES
   const [presion, setPresion] = useState("");
   const [temperatura, setTemperatura] = useState("");
   const [pulso, setPulso] = useState("");
   const [respiracion, setRespiracion] = useState("");
 
-  // ESTADOS TEXTOS LARGOS
+  // TEXTOS
   const [descEstoma, setDescEstoma] = useState("");
-  const [motivoTexto, setMotivoTexto] = useState(""); // <--- NUEVO
+  const [motivoTexto, setMotivoTexto] = useState(""); 
 
+  // CITA
   const [fechaCita, setFechaCita] = useState("");
   const [horaCita, setHoraCita] = useState("");
   const [motivoCita, setMotivoCita] = useState("");
@@ -78,7 +95,7 @@ function DetallePaciente() {
       .then((data) => {
         setPaciente(data);
         setDescEstoma(data.descripcion_estomatognatico || "");
-        setMotivoTexto(data.motivo_consulta || ""); // <--- CARGAMOS EL MOTIVO
+        setMotivoTexto(data.motivo_consulta || ""); 
       });
 
     fetch(`http://127.0.0.1:8000/api/tratamientos/?paciente=${id}`, {
@@ -118,7 +135,6 @@ function DetallePaciente() {
     } catch (error) { alert("Error al guardar cambio"); }
   };
 
-  // Guardar textos (Motivo o Sección 5)
   const guardarTexto = async (campo: string, valor: string) => {
     if (!paciente) return;
     try {
@@ -211,8 +227,11 @@ function DetallePaciente() {
                 <User size={24} className="text-blue-600"/> {paciente.nombre}
               </h1>
               <div className="flex gap-4 text-sm text-gray-500 mt-1">
-                <span className="flex items-center gap-1"><CreditCard size={14}/> {paciente.cedula}</span>
-                <span className="flex items-center gap-1"><Phone size={14}/> {paciente.telefono}</span>
+                <span className="flex items-center gap-1"><CreditCard size={14}/> {paciente.cedula || <span className="text-gray-300 italic">S/N</span>}</span>
+                <span className="flex items-center gap-1"><Phone size={14}/> {paciente.telefono || <span className="text-gray-300 italic">S/N</span>}</span>
+                <button onClick={() => setMostrarFicha(true)} className="text-blue-600 hover:text-blue-800 font-bold flex items-center gap-1 ml-2 underline">
+                    <Info size={14}/> Ver Ficha Completa
+                </button>
               </div>
             </div>
           </div>
@@ -221,18 +240,63 @@ function DetallePaciente() {
           </button>
         </div>
 
+        {/* MODAL FICHA */}
+        {mostrarFicha && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
+                    <div className="bg-gray-800 text-white p-4 flex justify-between items-center">
+                        <h2 className="font-bold text-lg flex items-center gap-2"><User size={20}/> Ficha de Filiación</h2>
+                        <button onClick={() => setMostrarFicha(false)} className="hover:bg-gray-700 p-1 rounded-full"><X size={20}/></button>
+                    </div>
+                    <div className="p-6 grid grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                            <h3 className="text-blue-600 font-bold border-b pb-1 text-sm uppercase">Datos Personales</h3>
+                            <p className="text-sm text-gray-600"><strong className="text-gray-800">Nombre:</strong> {paciente.nombre}</p>
+                            <p className="text-sm text-gray-600"><strong className="text-gray-800">Cédula:</strong> {paciente.cedula}</p>
+                            <p className="text-sm text-gray-600"><strong className="text-gray-800">Sexo:</strong> {paciente.sexo === 'M' ? 'Masculino' : paciente.sexo === 'F' ? 'Femenino' : 'Otro'}</p>
+                            <p className="text-sm text-gray-600"><strong className="text-gray-800">Fecha Nac:</strong> {paciente.fecha_nacimiento}</p>
+                            <p className="text-sm text-gray-600"><strong className="text-gray-800">Ocupación:</strong> {paciente.ocupacion}</p>
+                        </div>
+                        <div className="space-y-3">
+                            <h3 className="text-blue-600 font-bold border-b pb-1 text-sm uppercase">Contacto</h3>
+                            <p className="text-sm text-gray-600 flex items-center gap-2"><Phone size={14}/> {paciente.telefono}</p>
+                            <p className="text-sm text-gray-600 flex items-center gap-2"><Mail size={14}/> {paciente.email}</p>
+                            <p className="text-sm text-gray-600 flex items-start gap-2"><MapPin size={14} className="mt-1"/> {paciente.direccion}</p>
+                        </div>
+                        
+                        {paciente.tiene_representante && (
+                            <div className="col-span-2 bg-purple-50 p-4 rounded-xl border border-purple-100 mt-2">
+                                <h3 className="text-purple-700 font-bold border-b border-purple-200 pb-1 text-sm uppercase flex items-center gap-2 mb-2">
+                                    <ShieldCheck size={16}/> Apoderado / Responsable
+                                </h3>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <p className="text-sm text-gray-600"><strong className="text-gray-800">Nombre:</strong> {paciente.rep_nombres} {paciente.rep_apellidos}</p>
+                                    <p className="text-sm text-gray-600"><strong className="text-gray-800">Relación:</strong> {paciente.rep_relacion}</p>
+                                    <p className="text-sm text-gray-600"><strong className="text-gray-800">Cédula:</strong> {paciente.rep_cedula}</p>
+                                    <p className="text-sm text-gray-600"><strong className="text-gray-800">Teléfono:</strong> {paciente.rep_telefono}</p>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    <div className="p-4 bg-gray-50 text-right">
+                        <button onClick={() => setMostrarFicha(false)} className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg text-sm font-medium">Cerrar</button>
+                    </div>
+                </div>
+            </div>
+        )}
+
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           
           {/* COLUMNA IZQUIERDA */}
           <div className="xl:col-span-3 space-y-6">
             
-            {/* --- SECCIÓN 1: MOTIVO DE CONSULTA (NUEVO) --- */}
+            {/* MOTIVO CONSULTA */}
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2 border-b pb-2">
                 <MessageSquare className="text-blue-500" size={20}/> 1. Motivo Consulta
               </h2>
               <textarea 
-                placeholder="Anexar la queja del problema (Versión del informante)..." 
+                placeholder="Anexar la queja del problema..." 
                 className="w-full text-sm p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
                 rows={3}
                 value={motivoTexto}
@@ -280,7 +344,7 @@ function DetallePaciente() {
                 ))}
               </div>
               <textarea 
-                placeholder="Describir patología encontrada..." 
+                placeholder="Describir patología..." 
                 className="w-full text-xs p-2 border rounded-lg bg-gray-50 focus:ring-1 focus:ring-purple-500 outline-none"
                 rows={3}
                 value={descEstoma}
@@ -305,7 +369,7 @@ function DetallePaciente() {
             </div>
           </div>
 
-          {/* COLUMNA CENTRAL + DERECHA (Igual que antes) */}
+          {/* COLUMNA DERECHA */}
           <div className="xl:col-span-6 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
              <div className="flex flex-wrap gap-2 mb-6 justify-center bg-gray-50 p-3 rounded-xl">
               {[{ id: 'red', label: 'Caries', color: 'bg-red-500' }, { id: 'blue', label: 'Restaurado', color: 'bg-blue-500' }, { id: 'yellow', label: 'Corona', color: 'bg-yellow-400' }, { id: 'green', label: 'Extracción', color: 'bg-green-500' }].map((tool) => (
@@ -314,7 +378,7 @@ function DetallePaciente() {
                 </button>
               ))}
             </div>
-            {/* ODONTOGRAMA */}
+            
             <div className="flex flex-col gap-6 items-center overflow-x-auto pb-4 select-none border-b border-gray-100 mb-6">
               <div className="flex gap-4 pb-4 border-b border-dashed border-gray-200">
                 <div className="flex gap-1 border-r border-gray-300 pr-4">{cuadrante1.map(num => <Diente key={num} numero={num} colores={estadoDientes[`diente-${num}`] || dienteVacio} onClick={(parte) => pintarDiente(num, parte)} />)}</div>
@@ -325,7 +389,7 @@ function DetallePaciente() {
                 <div className="flex gap-1">{cuadrante3.map(num => <Diente key={num} numero={num} colores={estadoDientes[`diente-${num}`] || dienteVacio} onClick={(parte) => pintarDiente(num, parte)} />)}</div>
               </div>
             </div>
-            {/* SIGNOS VITALES */}
+            
             <div className="mb-4 bg-blue-50 p-4 rounded-xl border border-blue-100">
               <h3 className="text-xs font-bold text-blue-800 uppercase mb-3 flex items-center gap-2">
                 <Activity size={16}/> 4. Signos Vitales

@@ -5,6 +5,29 @@ class Paciente(models.Model):
     cedula = models.CharField(max_length=20, unique=True)
     telefono = models.CharField(max_length=15, blank=True)
     email = models.EmailField(blank=True)
+    fecha_nacimiento = models.DateField(blank=True, null=True)
+
+   # --- DATOS DEL APODERADO / REPRESENTANTE LEGAL ---
+    # Solo se llenan si el paciente es menor o dependiente
+    tiene_representante = models.BooleanField(default=False)
+    
+    rep_nombres = models.CharField(max_length=100, blank=True, null=True)
+    rep_apellidos = models.CharField(max_length=100, blank=True, null=True)
+    rep_relacion = models.CharField(max_length=50, blank=True, null=True) # Ej: Padre, Madre, Tío
+    rep_tipo_documento = models.CharField(max_length=20, default='CEDULA')
+    rep_cedula = models.CharField(max_length=20, blank=True, null=True)
+    rep_email = models.EmailField(blank=True, null=True)
+    rep_telefono = models.CharField(max_length=20, blank=True, null=True)
+    rep_direccion = models.TextField(blank=True, null=True)
+    # --- DATOS DEMOGRÁFICOS ADICIONALES (NUEVO) ---
+    SEXO_OPCIONES = [
+        ('M', 'Masculino'),
+        ('F', 'Femenino'),
+        ('O', 'Otro'),
+    ]
+    sexo = models.CharField(max_length=1, choices=SEXO_OPCIONES, default='M')
+    direccion = models.TextField(blank=True, null=True)
+    ocupacion = models.CharField(max_length=100, blank=True, null=True)
     # --- SECCIÓN 1: MOTIVO DE CONSULTA (MSP) ---
     motivo_consulta = models.TextField(blank=True, null=True)
     fecha_nacimiento = models.DateField()
