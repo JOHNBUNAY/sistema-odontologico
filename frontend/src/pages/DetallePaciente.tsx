@@ -379,14 +379,17 @@ function DetallePaciente() {
               ))}
             </div>
             
-            <div className="flex flex-col gap-6 items-center overflow-x-auto pb-4 select-none border-b border-gray-100 mb-6">
-              <div className="flex gap-4 pb-4 border-b border-dashed border-gray-200">
-                <div className="flex gap-1 border-r border-gray-300 pr-4">{cuadrante1.map(num => <Diente key={num} numero={num} colores={estadoDientes[`diente-${num}`] || dienteVacio} onClick={(parte) => pintarDiente(num, parte)} />)}</div>
-                <div className="flex gap-1">{cuadrante2.map(num => <Diente key={num} numero={num} colores={estadoDientes[`diente-${num}`] || dienteVacio} onClick={(parte) => pintarDiente(num, parte)} />)}</div>
-              </div>
-              <div className="flex gap-4">
-                <div className="flex gap-1 border-r border-gray-300 pr-4">{cuadrante4.map(num => <Diente key={num} numero={num} colores={estadoDientes[`diente-${num}`] || dienteVacio} onClick={(parte) => pintarDiente(num, parte)} />)}</div>
-                <div className="flex gap-1">{cuadrante3.map(num => <Diente key={num} numero={num} colores={estadoDientes[`diente-${num}`] || dienteVacio} onClick={(parte) => pintarDiente(num, parte)} />)}</div>
+            {/* ODONTOGRAMA - CORREGIDO */}
+            <div className="overflow-x-auto pb-4 select-none border-b border-gray-100 mb-6 px-4">
+              <div className="min-w-max mx-auto flex flex-col gap-6">
+                <div className="flex gap-4 pb-4 border-b border-dashed border-gray-200">
+                  <div className="flex gap-1 border-r border-gray-300 pr-4">{cuadrante1.map(num => <Diente key={num} numero={num} colores={estadoDientes[`diente-${num}`] || dienteVacio} onClick={(parte) => pintarDiente(num, parte)} />)}</div>
+                  <div className="flex gap-1">{cuadrante2.map(num => <Diente key={num} numero={num} colores={estadoDientes[`diente-${num}`] || dienteVacio} onClick={(parte) => pintarDiente(num, parte)} />)}</div>
+                </div>
+                <div className="flex gap-4">
+                  <div className="flex gap-1 border-r border-gray-300 pr-4">{cuadrante4.map(num => <Diente key={num} numero={num} colores={estadoDientes[`diente-${num}`] || dienteVacio} onClick={(parte) => pintarDiente(num, parte)} />)}</div>
+                  <div className="flex gap-1">{cuadrante3.map(num => <Diente key={num} numero={num} colores={estadoDientes[`diente-${num}`] || dienteVacio} onClick={(parte) => pintarDiente(num, parte)} />)}</div>
+                </div>
               </div>
             </div>
             
