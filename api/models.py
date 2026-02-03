@@ -30,6 +30,8 @@ class Paciente(models.Model):
     ocupacion = models.CharField(max_length=100, blank=True, null=True)
     # --- SECCIÓN 1: MOTIVO DE CONSULTA (MSP) ---
     motivo_consulta = models.TextField(blank=True, null=True)
+    # SECCIÓN 2 (NUEVO)
+    enfermedad_actual = models.TextField(blank=True, null=True)
     fecha_nacimiento = models.DateField()
     creado_en = models.DateTimeField(auto_now_add=True)
 

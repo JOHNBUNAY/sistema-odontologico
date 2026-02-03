@@ -24,6 +24,7 @@ interface Paciente {
   
   // Sección 1: Motivo
   motivo_consulta: string;
+  enfermedad_actual: string;
   // Antecedentes
   alergia_antibioticos: boolean;
   alergia_anestesia: boolean;
@@ -81,6 +82,7 @@ function DetallePaciente() {
   // TEXTOS
   const [descEstoma, setDescEstoma] = useState("");
   const [motivoTexto, setMotivoTexto] = useState(""); 
+  const [enfermedadTexto, setEnfermedadTexto] = useState("");
 
   // CITA
   const [fechaCita, setFechaCita] = useState("");
@@ -96,6 +98,7 @@ function DetallePaciente() {
         setPaciente(data);
         setDescEstoma(data.descripcion_estomatognatico || "");
         setMotivoTexto(data.motivo_consulta || ""); 
+        setEnfermedadTexto(data.enfermedad_actual || "");
       });
 
     fetch(`http://127.0.0.1:8000/api/tratamientos/?paciente=${id}`, {
@@ -293,8 +296,8 @@ function DetallePaciente() {
             {/* MOTIVO CONSULTA */}
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2 border-b pb-2">
-                <MessageSquare className="text-blue-500" size={20}/> 1. Motivo Consulta
-              </h2>
+                <MessageSquare className="text-blue-500" size={20}/> 1. 
+              </h2>Motivo Consulta
               <textarea 
                 placeholder="Anexar la queja del problema..." 
                 className="w-full text-sm p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
@@ -304,25 +307,76 @@ function DetallePaciente() {
                 onBlur={() => guardarTexto('motivo_consulta', motivoTexto)}
               ></textarea>
             </div>
+            
+
+            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
+              <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2 border-b pb-2">
+                <Activity className="text-blue-500" size={20}/> 2. Enfermedad o Problema Actual
+              </h2>
+              <p className="text-xs text-gray-400 mb-2 italic">Registrar: Cronología, localización, características, intensidad, causa aparente, síntomas asociados.</p>
+              <textarea 
+                placeholder="Describir la evolución clínica..." 
+                className="w-full text-sm p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
+                rows={4} // Más alto porque aquí se escribe más
+                value={enfermedadTexto}
+                onChange={(e) => setEnfermedadTexto(e.target.value)}
+                onBlur={() => guardarTexto('enfermedad_actual', enfermedadTexto)}
+              ></textarea>
+            </div>
 
             {/* SECCIÓN 3: ANTECEDENTES */}
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-              <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
-                <AlertTriangle className="text-orange-500" size={20}/> 3. Alerta Médica
+           <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+              <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2 border-b pb-2">
+                <AlertTriangle className="text-orange-500" size={20}/> 3. Antecedentes Personales
               </h2>
-              <div className="space-y-2">
-                {listaAntecedentes.map((item) => (
-                  <div key={item.key} onClick={() => toggleCampo(item.key as keyof Paciente)} className={`flex items-center justify-between p-2 rounded-lg cursor-pointer transition-colors ${
-                      // @ts-ignore
-                      paciente[item.key] ? 'bg-red-50 border border-red-200' : 'hover:bg-gray-50'
-                    }`}>
-                    <span className={`text-sm font-medium ${
-                      // @ts-ignore
-                      paciente[item.key] ? 'text-red-700' : 'text-gray-600'}`}>{item.label}</span>
-                    {/* @ts-ignore */}
-                    {paciente[item.key] ? <CheckSquare className="text-red-600" size={18} /> : <Square className="text-gray-300" size={18} />}
-                  </div>
+              
+              {/* GRILLA TIPO TABLA (2 COLUMNAS PARA QUE QUEPA EN EL LATERAL) */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                {[
+                  { key: 'alergia_antibioticos', label: '1. Alergia Antibiótico' },
+                  { key: 'alergia_anestesia', label: '2. Alergia Anestesia' },
+                  { key: 'hemorragias', label: '3. Hemorragias' },
+                  { key: 'vih_sida', label: '4. VIH / SIDA' },
+                  { key: 'tuberculosis', label: '5. Tuberculosis' },
+                  { key: 'asma', label: '6. Asma' },
+                  { key: 'diabetes', label: '7. Diabetes' },
+                  { key: 'hipertension', label: '8. Hipertensión' },
+                  { key: 'enfermedad_cardiaca', label: '9. Enf. Cardíaca' },
+                  { key: 'otros_antecedentes', label: '10. Otro', isCheck: false } // Marcador visual
+                ].map((item) => (
+                   item.isCheck !== false ? (
+                    <div 
+                      key={item.key} 
+                      onClick={() => toggleCampo(item.key as keyof Paciente)} 
+                      className={`flex items-center justify-between p-2 rounded border cursor-pointer transition-all ${
+                        // @ts-ignore
+                        paciente[item.key] ? 'bg-orange-100 border-orange-300 text-orange-800' : 'bg-gray-50 border-gray-100 text-gray-500 hover:bg-gray-100'
+                      }`}
+                    >
+                      <span className="text-[10px] font-bold uppercase">{item.label}</span>
+                      {/* @ts-ignore */}
+                      <div className={`w-3 h-3 rounded-sm border flex items-center justify-center ${paciente[item.key] ? 'bg-orange-500 border-orange-500' : 'bg-white border-gray-300'}`}>
+                        {/* @ts-ignore */}
+                        {paciente[item.key] && <span className="text-white text-[8px]">✓</span>}
+                      </div>
+                    </div>
+                   ) : null
                 ))}
+              </div>
+
+              {/* CAMPO DE TEXTO PARA DETALLES (Vital para el Formulario) */}
+              <div>
+                <label className="text-xs font-bold text-gray-400 mb-1 block uppercase">Observaciones / Otros:</label>
+                <textarea 
+                  placeholder="Describir antecedentes positivos..." 
+                  className="w-full text-sm p-2 border rounded-lg bg-yellow-50/50 focus:ring-2 focus:ring-orange-200 outline-none transition-all"
+                  rows={2}
+                  // Usamos el campo 'otros_antecedentes' como texto libre si no es booleano, 
+                  // o necesitamos crear un campo de texto especifico si 'otros' era booleano.
+                  // ASUMIRÉ que 'otros_antecedentes' en tu modelo es TextField para escribir.
+                  defaultValue={paciente.otros_antecedentes || ""}
+                  onBlur={(e) => guardarTexto('otros_antecedentes', e.target.value)}
+                ></textarea>
               </div>
             </div>
 
