@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Save, Calendar, Activity, Phone, CreditCard, User, AlertTriangle, CheckSquare, Square, Thermometer, Heart, Wind, Stethoscope, MessageSquare, Info, X, MapPin, Mail, ShieldCheck } from 'lucide-react';
+// LIMPIEZA: Borré Trash2, Edit, CheckSquare, Square y useNavigate porque ya no se usan aquí.
+import { ArrowLeft, Save, Calendar, Activity, Phone, CreditCard, User, AlertTriangle, Thermometer, Heart, Wind, Stethoscope, MessageSquare, Info, X, MapPin, Mail, ShieldCheck } from 'lucide-react';
 import Layout from '../components/Layout';
 import Diente from '../components/Diente';
 
@@ -14,7 +15,6 @@ interface Paciente {
   sexo: string;
   direccion: string;
   ocupacion: string;
-  // Apoderado
   tiene_representante: boolean;
   rep_nombres: string;
   rep_apellidos: string;
@@ -22,7 +22,7 @@ interface Paciente {
   rep_cedula: string;
   rep_telefono: string;
   
-  // Sección 1: Motivo
+  // Sección 1 y 2
   motivo_consulta: string;
   enfermedad_actual: string;
   // Antecedentes
@@ -36,7 +36,7 @@ interface Paciente {
   hipertension: boolean;
   enfermedad_cardiaca: boolean;
   otros_antecedentes: string;
-  // Sección 5: Estomatognático
+  // Sección 5
   labios: boolean;
   mejillas: boolean;
   maxilar_superior: boolean;
@@ -62,29 +62,26 @@ interface Tratamiento {
 const dienteVacio = { superior: 'white', inferior: 'white', izquierda: 'white', derecha: 'white', centro: 'white' };
 
 function DetallePaciente() {
+  // LIMPIEZA: Borré 'navigate' porque aquí solo visualizamos
   const { id } = useParams();
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [token] = useState(localStorage.getItem('token'));
   
-  // ESTADOS INTERFAZ
   const [mostrarFicha, setMostrarFicha] = useState(false);
   const [herramienta, setHerramienta] = useState<string>('red'); 
   const [estadoDientes, setEstadoDientes] = useState<any>({});
   const [nota, setNota] = useState(""); 
   const [historial, setHistorial] = useState<Tratamiento[]>([]);
   
-  // SIGNOS VITALES
   const [presion, setPresion] = useState("");
   const [temperatura, setTemperatura] = useState("");
   const [pulso, setPulso] = useState("");
   const [respiracion, setRespiracion] = useState("");
 
-  // TEXTOS
   const [descEstoma, setDescEstoma] = useState("");
   const [motivoTexto, setMotivoTexto] = useState(""); 
   const [enfermedadTexto, setEnfermedadTexto] = useState("");
 
-  // CITA
   const [fechaCita, setFechaCita] = useState("");
   const [horaCita, setHoraCita] = useState("");
   const [motivoCita, setMotivoCita] = useState("");
@@ -116,6 +113,8 @@ function DetallePaciente() {
   };
 
   useEffect(() => { cargarDatos(); }, [id]);
+
+  // LIMPIEZA: Borré la función eliminarPaciente() porque el botón ya no está aquí.
 
   const pintarDiente = (numero: number, parte: string) => {
     const key = `diente-${numero}`;
@@ -199,9 +198,16 @@ function DetallePaciente() {
   if (!paciente) return <Layout><div className="p-10 text-center">Cargando...</div></Layout>;
 
   const listaAntecedentes = [
-    { key: 'alergia_antibioticos', label: 'Alergia Antibióticos' }, { key: 'alergia_anestesia', label: 'Alergia Anestesia' },
-    { key: 'hipertension', label: 'Hipertensión' }, { key: 'diabetes', label: 'Diabetes' },
-    { key: 'hemorragias', label: 'Hemorragias' }, { key: 'asma', label: 'Asma' }
+    { key: 'alergia_antibioticos', label: '1. Alergia Antibiótico' },
+    { key: 'alergia_anestesia', label: '2. Alergia Anestesia' },
+    { key: 'hemorragias', label: '3. Hemorragias' },
+    { key: 'vih_sida', label: '4. VIH / SIDA' },
+    { key: 'tuberculosis', label: '5. Tuberculosis' },
+    { key: 'asma', label: '6. Asma' },
+    { key: 'diabetes', label: '7. Diabetes' },
+    { key: 'hipertension', label: '8. Hipertensión' },
+    { key: 'enfermedad_cardiaca', label: '9. Enf. Cardíaca' },
+    { key: 'otros_antecedentes', label: '10. Otro', isCheck: false }
   ];
 
   const listaEstomatognatico = [
@@ -243,7 +249,7 @@ function DetallePaciente() {
           </button>
         </div>
 
-        {/* MODAL FICHA */}
+        {/* MODAL FICHA DE FILIACIÓN */}
         {mostrarFicha && (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
                 <div className="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden animate-fadeIn">
@@ -293,11 +299,11 @@ function DetallePaciente() {
           {/* COLUMNA IZQUIERDA */}
           <div className="xl:col-span-3 space-y-6">
             
-            {/* MOTIVO CONSULTA */}
+            {/* 1. MOTIVO CONSULTA */}
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2 border-b pb-2">
-                <MessageSquare className="text-blue-500" size={20}/> 1. 
-              </h2>Motivo Consulta
+                <MessageSquare className="text-blue-500" size={20}/> 1. Motivo Consulta
+              </h2>
               <textarea 
                 placeholder="Anexar la queja del problema..." 
                 className="w-full text-sm p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
@@ -307,8 +313,8 @@ function DetallePaciente() {
                 onBlur={() => guardarTexto('motivo_consulta', motivoTexto)}
               ></textarea>
             </div>
-            
 
+            {/* 2. ENFERMEDAD ACTUAL */}
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2 border-b pb-2">
                 <Activity className="text-blue-500" size={20}/> 2. Enfermedad o Problema Actual
@@ -317,33 +323,20 @@ function DetallePaciente() {
               <textarea 
                 placeholder="Describir la evolución clínica..." 
                 className="w-full text-sm p-3 border rounded-xl bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none transition-all"
-                rows={4} // Más alto porque aquí se escribe más
+                rows={4} 
                 value={enfermedadTexto}
                 onChange={(e) => setEnfermedadTexto(e.target.value)}
                 onBlur={() => guardarTexto('enfermedad_actual', enfermedadTexto)}
               ></textarea>
             </div>
 
-            {/* SECCIÓN 3: ANTECEDENTES */}
-           <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
+            {/* 3. ANTECEDENTES */}
+            <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="font-bold text-gray-800 mb-3 flex items-center gap-2 border-b pb-2">
                 <AlertTriangle className="text-orange-500" size={20}/> 3. Antecedentes Personales
               </h2>
-              
-              {/* GRILLA TIPO TABLA (2 COLUMNAS PARA QUE QUEPA EN EL LATERAL) */}
               <div className="grid grid-cols-2 gap-2 mb-3">
-                {[
-                  { key: 'alergia_antibioticos', label: '1. Alergia Antibiótico' },
-                  { key: 'alergia_anestesia', label: '2. Alergia Anestesia' },
-                  { key: 'hemorragias', label: '3. Hemorragias' },
-                  { key: 'vih_sida', label: '4. VIH / SIDA' },
-                  { key: 'tuberculosis', label: '5. Tuberculosis' },
-                  { key: 'asma', label: '6. Asma' },
-                  { key: 'diabetes', label: '7. Diabetes' },
-                  { key: 'hipertension', label: '8. Hipertensión' },
-                  { key: 'enfermedad_cardiaca', label: '9. Enf. Cardíaca' },
-                  { key: 'otros_antecedentes', label: '10. Otro', isCheck: false } // Marcador visual
-                ].map((item) => (
+                {listaAntecedentes.map((item) => (
                    item.isCheck !== false ? (
                     <div 
                       key={item.key} 
@@ -363,24 +356,19 @@ function DetallePaciente() {
                    ) : null
                 ))}
               </div>
-
-              {/* CAMPO DE TEXTO PARA DETALLES (Vital para el Formulario) */}
               <div>
                 <label className="text-xs font-bold text-gray-400 mb-1 block uppercase">Observaciones / Otros:</label>
                 <textarea 
                   placeholder="Describir antecedentes positivos..." 
                   className="w-full text-sm p-2 border rounded-lg bg-yellow-50/50 focus:ring-2 focus:ring-orange-200 outline-none transition-all"
                   rows={2}
-                  // Usamos el campo 'otros_antecedentes' como texto libre si no es booleano, 
-                  // o necesitamos crear un campo de texto especifico si 'otros' era booleano.
-                  // ASUMIRÉ que 'otros_antecedentes' en tu modelo es TextField para escribir.
                   defaultValue={paciente.otros_antecedentes || ""}
                   onBlur={(e) => guardarTexto('otros_antecedentes', e.target.value)}
                 ></textarea>
               </div>
             </div>
 
-            {/* SECCIÓN 5: ESTOMATOGNÁTICO */}
+            {/* 5. ESTOMATOGNÁTICO */}
             <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
               <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2 border-b pb-2">
                 <Stethoscope className="text-purple-500" size={20}/> 5. Estomatognático
@@ -433,7 +421,7 @@ function DetallePaciente() {
               ))}
             </div>
             
-            {/* ODONTOGRAMA - CORREGIDO */}
+            {/* ODONTOGRAMA */}
             <div className="overflow-x-auto pb-4 select-none border-b border-gray-100 mb-6 px-4">
               <div className="min-w-max mx-auto flex flex-col gap-6">
                 <div className="flex gap-4 pb-4 border-b border-dashed border-gray-200">

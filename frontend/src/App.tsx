@@ -6,6 +6,8 @@ import Agenda from './pages/Agenda';
 import Login from './pages/Login';
 import RutaProtegida from './components/RutaProtegida'; // <--- IMPORTANTE
 import Pacientes from './pages/Pacientes';
+
+import EditarPaciente from './pages/EditarPaciente';
 function App() {
   return (
     <BrowserRouter>
@@ -25,10 +27,10 @@ function App() {
             <NuevoPaciente />
           </RutaProtegida>
         } />
-        
+        <Route path="/pacientes/editar/:id" element={<EditarPaciente />} />
         <Route path="/pacientes" element={
   <RutaProtegida>
-    <Pacientes />  {/* <--- AHORA USA EL ARCHIVO CORRECTO */}
+    <Pacientes />  
   </RutaProtegida>
 } />
         
@@ -44,7 +46,6 @@ function App() {
           </RutaProtegida>
         } />
 
-        {/* Si escriben cualquier cosa rara, mandar al inicio (que a su vez verificará el token) */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>
