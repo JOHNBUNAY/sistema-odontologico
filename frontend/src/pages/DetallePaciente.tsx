@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-// LIMPIEZA: Borré Trash2, Edit, CheckSquare, Square y useNavigate porque ya no se usan aquí.
 import { ArrowLeft, Save, Calendar, Activity, Phone, CreditCard, User, AlertTriangle, Thermometer, Heart, Wind, Stethoscope, MessageSquare, Info, X, MapPin, Mail, ShieldCheck } from 'lucide-react';
 import Layout from '../components/Layout';
 import Diente from '../components/Diente';
@@ -62,12 +61,12 @@ interface Tratamiento {
 const dienteVacio = { superior: 'white', inferior: 'white', izquierda: 'white', derecha: 'white', centro: 'white' };
 
 function DetallePaciente() {
-  // LIMPIEZA: Borré 'navigate' porque aquí solo visualizamos
   const { id } = useParams();
   const [paciente, setPaciente] = useState<Paciente | null>(null);
   const [token] = useState(localStorage.getItem('token'));
   
   const [mostrarFicha, setMostrarFicha] = useState(false);
+  const [mostrarCita, setMostrarCita] = useState(false); // ESTADO DEL MODAL
   const [herramienta, setHerramienta] = useState<string>('red'); 
   const [estadoDientes, setEstadoDientes] = useState<any>({});
   const [nota, setNota] = useState(""); 
@@ -113,8 +112,6 @@ function DetallePaciente() {
   };
 
   useEffect(() => { cargarDatos(); }, [id]);
-
-  // LIMPIEZA: Borré la función eliminarPaciente() porque el botón ya no está aquí.
 
   const pintarDiente = (numero: number, parte: string) => {
     const key = `diente-${numero}`;
@@ -175,7 +172,7 @@ function DetallePaciente() {
     } catch (e) { alert("Error de conexión"); }
   };
 
-  const agendarCita = async (e: React.FormEvent) => {
+ const agendarCita = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       const res = await fetch('http://127.0.0.1:8000/api/citas/', {
@@ -189,8 +186,9 @@ function DetallePaciente() {
         })
       });
       if (res.ok) {
-        alert("📅 ¡Cita agendada!");
+        alert("📅 ¡Cita agendada correctamente!");
         setFechaCita(""); setHoraCita(""); setMotivoCita("");
+        setMostrarCita(false); // Cierra el modal
       }
     } catch (e) { alert("Error de conexión"); }
   };
@@ -227,6 +225,7 @@ function DetallePaciente() {
   return (
     <Layout>
       <div className="max-w-7xl mx-auto">
+        
         {/* ENCABEZADO */}
         <div className="flex justify-between items-center mb-6">
           <div className="flex items-center gap-4">
@@ -244,9 +243,20 @@ function DetallePaciente() {
               </div>
             </div>
           </div>
-          <button onClick={guardarTratamiento} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-xl font-medium shadow-lg shadow-green-200 flex items-center gap-2 hover:scale-105 transition-transform">
-            <Save size={20} /> Guardar Evolución
-          </button>
+
+          <div className="flex gap-3">
+            {/* BOTÓN AGENDAR CITA (ABRE MODAL) */}
+            <button 
+                onClick={() => setMostrarCita(true)}
+                className="bg-white text-blue-600 border border-blue-200 hover:bg-blue-50 px-4 py-2.5 rounded-xl font-bold shadow-sm flex items-center gap-2 transition-all"
+            >
+                <Calendar size={20} /> Agendar Cita
+            </button>
+
+            <button onClick={guardarTratamiento} className="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-xl font-medium shadow-lg shadow-green-200 flex items-center gap-2 hover:scale-105 transition-transform">
+                <Save size={20} /> Guardar Evolución
+            </button>
+          </div>
         </div>
 
         {/* MODAL FICHA DE FILIACIÓN */}
@@ -258,6 +268,7 @@ function DetallePaciente() {
                         <button onClick={() => setMostrarFicha(false)} className="hover:bg-gray-700 p-1 rounded-full"><X size={20}/></button>
                     </div>
                     <div className="p-6 grid grid-cols-2 gap-6">
+                        {/* ... Datos personales ... */}
                         <div className="space-y-3">
                             <h3 className="text-blue-600 font-bold border-b pb-1 text-sm uppercase">Datos Personales</h3>
                             <p className="text-sm text-gray-600"><strong className="text-gray-800">Nombre:</strong> {paciente.nombre}</p>
@@ -272,7 +283,6 @@ function DetallePaciente() {
                             <p className="text-sm text-gray-600 flex items-center gap-2"><Mail size={14}/> {paciente.email}</p>
                             <p className="text-sm text-gray-600 flex items-start gap-2"><MapPin size={14} className="mt-1"/> {paciente.direccion}</p>
                         </div>
-                        
                         {paciente.tiene_representante && (
                             <div className="col-span-2 bg-purple-50 p-4 rounded-xl border border-purple-100 mt-2">
                                 <h3 className="text-purple-700 font-bold border-b border-purple-200 pb-1 text-sm uppercase flex items-center gap-2 mb-2">
@@ -395,20 +405,7 @@ function DetallePaciente() {
               ></textarea>
             </div>
 
-            {/* CITA */}
-            <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-              <h2 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <Calendar className="text-blue-500" size={20}/> Nueva Cita
-              </h2>
-              <form onSubmit={agendarCita} className="space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <input type="date" value={fechaCita} onChange={e => setFechaCita(e.target.value)} className="w-full p-2 border rounded-lg text-xs bg-gray-50" required />
-                  <input type="time" value={horaCita} onChange={e => setHoraCita(e.target.value)} className="w-full p-2 border rounded-lg text-xs bg-gray-50" required />
-                </div>
-                <input type="text" placeholder="Motivo..." value={motivoCita} onChange={e => setMotivoCita(e.target.value)} className="w-full p-2 border rounded-lg text-xs bg-gray-50" required />
-                <button type="submit" className="w-full bg-blue-50 text-blue-600 hover:bg-blue-100 font-bold py-2 rounded-lg text-xs transition">Agendar</button>
-              </form>
-            </div>
+            {/* YA NO HAY CITA AQUÍ */}
           </div>
 
           {/* COLUMNA DERECHA */}
@@ -463,6 +460,43 @@ function DetallePaciente() {
           </div>
         </div>
       </div>
+
+      {/* --- MODAL FLOTANTE DE NUEVA CITA (AQUÍ ESTABA FALTANDO) --- */}
+        {mostrarCita && (
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm animate-fadeIn">
+                <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+                    <div className="bg-blue-600 text-white p-4 flex justify-between items-center">
+                        <h2 className="font-bold text-lg flex items-center gap-2"><Calendar size={20}/> Agendar Próxima Cita</h2>
+                        <button onClick={() => setMostrarCita(false)} className="hover:bg-blue-700 p-1 rounded-full"><X size={20}/></button>
+                    </div>
+                    
+                    <form onSubmit={agendarCita} className="p-6 space-y-4">
+                        <p className="text-sm text-gray-500 mb-2">Selecciona la fecha y hora para el paciente <strong>{paciente?.nombre}</strong>.</p>
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">Fecha</label>
+                                <input type="date" value={fechaCita} onChange={e => setFechaCita(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl text-sm bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500" required />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-700 mb-1">Hora</label>
+                                <input type="time" value={horaCita} onChange={e => setHoraCita(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl text-sm bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500" required />
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <label className="block text-xs font-bold text-gray-700 mb-1">Motivo / Tratamiento</label>
+                            <input type="text" placeholder="Ej: Limpieza, Extracción..." value={motivoCita} onChange={e => setMotivoCita(e.target.value)} className="w-full p-3 border border-gray-200 rounded-xl text-sm bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500" required />
+                        </div>
+
+                        <div className="pt-2 flex gap-3">
+                            <button type="button" onClick={() => setMostrarCita(false)} className="flex-1 py-3 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition">Cancelar</button>
+                            <button type="submit" className="flex-1 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition">Confirmar Cita</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        )}
     </Layout>
   );
 }

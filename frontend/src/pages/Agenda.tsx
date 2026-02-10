@@ -5,7 +5,6 @@ import {
   User, 
   CheckCircle, 
   XCircle, 
-   
   ChevronLeft, 
   ChevronRight,
   PlusCircle
@@ -59,7 +58,7 @@ function Agenda() {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}` // ¡Importante para seguridad!
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
         },
         body: JSON.stringify({ estado: nuevoEstado })
       });
@@ -101,7 +100,7 @@ function Agenda() {
     <Layout>
       <div className="max-w-5xl mx-auto">
         
-        {/* ENCABEZADO Y CONTROLES */}
+        {/* ENCABEZADO Y CONTROLES (MODIFICADO) */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
           <div>
             <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
@@ -110,20 +109,28 @@ function Agenda() {
             <p className="text-gray-500 capitalize">{formatFechaBonita(fechaSeleccionada)}</p>
           </div>
 
-          <div className="flex items-center bg-white p-1.5 rounded-xl shadow-sm border border-gray-200">
-            <button onClick={() => cambiarDia(-1)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition">
-              <ChevronLeft size={20}/>
-            </button>
-            <div className="px-4 font-bold text-gray-700 min-w-[140px] text-center">
-              {fechaString}
+          <div className="flex items-center gap-3">
+            {/* NAVEGACIÓN DE DÍAS */}
+            <div className="flex items-center bg-white p-1.5 rounded-xl shadow-sm border border-gray-200">
+                <button onClick={() => cambiarDia(-1)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition">
+                <ChevronLeft size={20}/>
+                </button>
+                <div className="px-4 font-bold text-gray-700 min-w-[140px] text-center">
+                {fechaString}
+                </div>
+                <button onClick={() => cambiarDia(1)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition">
+                <ChevronRight size={20}/>
+                </button>
             </div>
-            <button onClick={() => cambiarDia(1)} className="p-2 hover:bg-gray-100 rounded-lg text-gray-600 transition">
-              <ChevronRight size={20}/>
-            </button>
+
+            {/* BOTÓN PERMANENTE DE AGENDAR (NUEVO) */}
+            <Link to="/pacientes" className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-xl font-bold shadow-lg shadow-blue-200 flex items-center gap-2 transition-transform hover:scale-105">
+                <PlusCircle size={20}/> <span className="hidden md:inline">Agendar Cita</span>
+            </Link>
           </div>
         </div>
 
-        {/* BARRA DE ESTADÍSTICAS (Solo se muestra si hay citas) */}
+        {/* BARRA DE ESTADÍSTICAS */}
         {stats.total > 0 && (
           <div className="grid grid-cols-3 gap-4 mb-6">
             <div className="bg-blue-50 text-blue-700 p-3 rounded-xl flex items-center justify-center gap-2 border border-blue-100 font-medium">
@@ -141,7 +148,7 @@ function Agenda() {
         {/* LISTA DE CITAS */}
         <div className="space-y-4">
           {citasFiltradas.length === 0 ? (
-            // EMPTY STATE MEJORADO
+            // EMPTY STATE
             <div className="text-center py-16 bg-white rounded-3xl border border-dashed border-gray-300">
               <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CalendarIcon size={32} className="text-gray-300"/>
@@ -149,9 +156,10 @@ function Agenda() {
               <h3 className="text-lg font-bold text-gray-700">Día libre</h3>
               <p className="text-gray-400 mb-6">No hay pacientes agendados para este día.</p>
               
+              {/* Botón extra en el centro (opcional, lo dejé por comodidad) */}
               <Link to="/pacientes" className="inline-flex items-center gap-2 text-blue-600 bg-blue-50 px-4 py-2 rounded-lg font-medium hover:bg-blue-100 transition">
-              <PlusCircle size={18}/> Buscar Paciente para Agendar
-             </Link>
+               <PlusCircle size={18}/> Agendar primer paciente
+              </Link>
             </div>
           ) : (
             // LISTA DE TARJETAS
@@ -160,7 +168,6 @@ function Agenda() {
               const esCompletada = cita.estado === 'COMPLETADA';
               const esCancelada = cita.estado === 'CANCELADA';
 
-              // Bordes de colores según estado
               const bordeColor = esCompletada ? 'border-l-green-500' : esCancelada ? 'border-l-red-300' : 'border-l-blue-500';
               const bgOpacity = esCancelada ? 'opacity-60 bg-gray-50' : 'bg-white';
 
@@ -189,16 +196,15 @@ function Agenda() {
 
                     {/* Estado / Acciones */}
                     <div className="flex items-center gap-2">
-                       {esCompletada && <span className="text-green-600 bg-green-50 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"><CheckCircle size={14}/> Finalizado</span>}
-                       {esCancelada && <span className="text-red-500 bg-red-50 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"><XCircle size={14}/> Cancelado</span>}
-                       
-                       {/* Botones de acción (solo si está pendiente) */}
-                       {!esCompletada && !esCancelada && (
-                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button onClick={() => cambiarEstado(cita.id, 'COMPLETADA')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Completar"><CheckCircle size={20}/></button>
-                          <button onClick={() => cambiarEstado(cita.id, 'CANCELADA')} className="p-2 text-red-400 hover:bg-red-50 rounded-lg" title="Cancelar"><XCircle size={20}/></button>
-                        </div>
-                       )}
+                        {esCompletada && <span className="text-green-600 bg-green-50 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"><CheckCircle size={14}/> Finalizado</span>}
+                        {esCancelada && <span className="text-red-500 bg-red-50 px-3 py-1 rounded-full text-xs font-bold flex items-center gap-1"><XCircle size={14}/> Cancelado</span>}
+                        
+                        {!esCompletada && !esCancelada && (
+                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                           <button onClick={() => cambiarEstado(cita.id, 'COMPLETADA')} className="p-2 text-green-600 hover:bg-green-50 rounded-lg" title="Completar"><CheckCircle size={20}/></button>
+                           <button onClick={() => cambiarEstado(cita.id, 'CANCELADA')} className="p-2 text-red-400 hover:bg-red-50 rounded-lg" title="Cancelar"><XCircle size={20}/></button>
+                         </div>
+                        )}
                     </div>
                   </div>
                 </div>
